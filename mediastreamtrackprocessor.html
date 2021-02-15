@@ -31,6 +31,7 @@
   //let intervalId = null;
   //let videoTrackReader = null;
   let processor = null;
+  let writable = null;
 
   let recorder = null;
   let canvasStream = null;
@@ -133,7 +134,7 @@
 
     const track = stream.getVideoTracks()[0];
     processor = new MediaStreamTrackProcessor(track);
-    const writable = new WritableStream({
+    writable = new WritableStream({
       start() {
         console.log('Writable start');
       },
@@ -160,11 +161,13 @@
   }
 
   function stopProcessor() {
-    if (transformer) {
-      transformer = null;
+    if (writable) {
+      //writable.close(); // not posible for locked stream
+      writable = null;
     }
 
     if (processor) {
+      //processor.readable.cancel(); // not posible for locked stream
       processor = null;
     }
   }
@@ -224,7 +227,7 @@
 
   function setupDownloadLink() {
     const anchor = document.getElementById('download_link');
-    anchor.download = 'recorded_reader.webm'; // ファイル名
+    anchor.download = 'recorded_processor.webm'; // ファイル名
     anchor.href = videoBlobUrl; // createObjecURL()で生成したURL
   }
 
