@@ -25,7 +25,7 @@
 
 [Japanese]
 
-- Chromeで https://mganeko.github.io/videotrackreader_demo/ を開く
+- フラグを有効にしたChromeで https://mganeko.github.io/videotrackreader_demo/ を開く
 - 4種類の方法の内、1つをクリックする
 - [Start] ボタンをクリック
   - カメラ映像が取得される
@@ -43,7 +43,7 @@ requestAnimationFrame() / setInterval() を使った場合には、録画中に�
 
 [Engligh]
 
-- open https://mganeko.github.io/videotrackreader_demo/
+- open https://mganeko.github.io/videotrackreader_demo/ 
 - click 1 of 4 types.
 - click [Start] button
   - Camera will start
