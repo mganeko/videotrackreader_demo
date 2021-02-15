@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+
+<body>
+  <h3> requestAnimationFrame </h3>
+  <button id="start_button" onclick="start()"">Start</button>
+  <button id=" stop_button" onclick="stop()">Stop</button>
+  &nbsp;
+  &nbsp;
+  <a id="download_link" href="#">Download</a>
+  <div>
+    <video id="original_video" width="160px" height="120px" style="border: gray 1px solid;"></video>
+    <video id="playback_video" width="160px" height="120px" style="border: gray 1px solid;"></video>
+  </div>
+  <div>
+    <canvas id="effect_canvas" width="320px" height="240px" style="border: gray 1px solid;"></video>
+  </div>
+
+</body>
+<script>
+  const video = document.getElementById('original_video');
+  const playbackVideo = document.getElementById('playback_video');
+  const canvas = document.getElementById('effect_canvas');
+  const ctx = canvas.getContext('2d');
+
+  let keepAnimation = false;
+  //let animationId = null;
+  let recorder = null;
+  let canvasStream = null;
+  let recodingChunks = null;
+  let videoBlobUrl = null;
+
+  async function start() {
+    await startVideo();
+    startAnimation();
+    startRecording();
+  }
+
+  async function stop() {
+    stopAnimation();
+    stopVideo();
+    stopRecording();
+  }
+
+  async function startVideo() {
+    const constraints = { video: true, audio: false };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      .catch(err => {
+        console.error('Media ERROR:', err);
+        return;
+      });
+
+    video.srcObject = stream;
+    await video.play().catch(err => console.error('media ERROR:', err));
+  }
+
+  async function stopVideo() {
+    if (video.srcObject) {
+      video.pause();
+      stopMediaStream(video.srcObject);
+      video.srcObject = null;
+    }
+  }
+
+  function startAnimation() {
+    keepAnimation = true;
+    requestAnimationFrame(animateCanvas);
+  }
+
+  function stopAnimation() {
+    keepAnimation = false;
+    clearCanvas();
+  }
+
+  function startRecording() {
+    if (recorder) {
+      console.warn('reacorder ALREADY started');
+      return;
+    }
+
+    const fps = 30;
+    const interval = 1000;
+    canvasStream = canvas.captureStream(fps);
+    recodingChunks = [];
+    recorder = new MediaRecorder(canvasStream);
+    recorder.ondataavailable = function (evt) {
+      recodingChunks.push(evt.data);
+    };
+    recorder.onstop = function (evt) {
+      console.log('Stop recording');
+      recorder = null;
+      buildRecordedVideo();
+      setupDownloadLink();
+      playbackRecordedVideo();
+    };
+
+    recorder.start(interval);
+    console.log('Start recording');
+  }
+
+  function stopRecording() {
+    if (recorder) {
+      recorder.stop();
+      stopMediaStream(canvasStream);
+      canvasStream = null;
+    }
+  }
+
+  function stopMediaStream(stream) {
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop()
+      });
+    }
+  }
+
+  function buildRecordedVideo() {
+    if (videoBlobUrl) {
+      window.URL.revokeObjectURL(videoBlobUrl);
+      videoBlobUrl = null;
+    }
+
+    const videoBlob = new Blob(recodingChunks, { type: "video/webm" });
+    videoBlobUrl = window.URL.createObjectURL(videoBlob);
+  }
+
+  function setupDownloadLink() {
+    const anchor = document.getElementById('download_link');
+    anchor.download = 'recorded_raf.webm'; // ファイル名
+    anchor.href = videoBlobUrl; // createObjecURL()で生成したURL
+  }
+
+  async function playbackRecordedVideo() {
+    playbackVideo.src = videoBlobUrl;
+    await playbackVideo.play().catch(err => console.error('media ERROR:', err));
+  }
+
+  function drawCanvas() {
+    const srcWidht = video.videoWidth;
+    const srcHeight = video.videoHeight;
+    const destWidth = canvas.width;
+    const destHeight = canvas.height;
+    //console.log(srcWidht, srcHeight, destWidth, destHeight);
+
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, srcWidht, srcHeight,
+        0, 0, destWidth, destHeight
+      );
+
+      drawClock();
+    }
+  }
+
+  function drawClock() {
+    const currentTime = new Date();
+    const strTime = _2digit(currentTime.getHours()) + ':' + _2digit(currentTime.getMinutes()) + ':' + _2digit(currentTime.getSeconds());
+
+    const fontHeight = canvas.height / 5;
+    const textTop = canvas.height / 5 + 4;
+    const textLeft = 8;
+    ctx.font = fontHeight + 'px serif'; //'128px serif';
+
+    ctx.fillStyle = 'rgb(0,0,255)';
+    ctx.fillText(strTime, textLeft, textTop);
+  }
+
+  function _2digit(str) {
+    return ('0' + str).slice(-2);
+  }
+
+  function clearCanvas() {
+    const destWidth = canvas.width;
+    const destHeight = canvas.height;
+    if (ctx) {
+      ctx.fillStyle = 'rgb(192, 192, 192)';
+      ctx.fillRect(0, 0, destWidth, destHeight);
+    }
+  }
+
+  function animateCanvas() {
+    drawCanvas();
+    if (keepAnimation) {
+      requestAnimationFrame(animateCanvas);
+    }
+  }
+
+</script>
+
+</html>
