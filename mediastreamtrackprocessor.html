@@ -31,7 +31,6 @@
   //let intervalId = null;
   //let videoTrackReader = null;
   let processor = null;
-  let transformer = null;
 
   let recorder = null;
   let canvasStream = null;
@@ -134,20 +133,23 @@
 
     const track = stream.getVideoTracks()[0];
     processor = new MediaStreamTrackProcessor(track);
-    transformer = new TransformStream({
-      async transform(videoFrame, controller) {
+    const writable = new WritableStream({
+      start() {
+        console.log('Writable start');
+      },
+      async write(videoFrame) {
         const imageBitmap = await videoFrame.createImageBitmap();
         drawCanvasBitmap(imageBitmap);
         imageBitmap.close();
-
-        videoFrame.close();
-        //controller.enqueue(videoFrame);
+        videoFrame.destroy();
+      },
+      stop() {
+        console.log('Writable stop');
       }
-    });
+    })
 
     processor.readable
-      .pipeThrough(transformer)
-      .pipeTo(processor.writable);
+      .pipeTo(writable);
   }
 
   function stopReader() {
