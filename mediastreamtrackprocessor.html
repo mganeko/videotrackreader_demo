@@ -110,23 +110,23 @@
   //
   // VideoTrackReader is deprecated; use MediaStreamTrackProcessor instead.
   //
-  function startReader(stream) {
-    if (videoTrackReader) {
-      console.warn('VideoTrackReader ALREADY exist');
-      return;
-    }
+  // function startReader(stream) {
+  //   if (videoTrackReader) {
+  //     console.warn('VideoTrackReader ALREADY exist');
+  //     return;
+  //   }
 
-    const track = stream.getVideoTracks()[0];
-    videoTrackReader = new VideoTrackReader(track);
-    videoTrackReader.start(async (videoFrame) => {
-      if (keepAnimation) {
-        const imageBitmap = await videoFrame.createImageBitmap();
-        drawCanvasBitmap(imageBitmap);
-        imageBitmap.close();
-      }
-      videoFrame.destroy();
-    });
-  }
+  //   const track = stream.getVideoTracks()[0];
+  //   videoTrackReader = new VideoTrackReader(track);
+  //   videoTrackReader.start(async (videoFrame) => {
+  //     if (keepAnimation) {
+  //       const imageBitmap = await videoFrame.createImageBitmap();
+  //       drawCanvasBitmap(imageBitmap);
+  //       imageBitmap.close();
+  //     }
+  //     videoFrame.destroy();
+  //   });
+  // }
 
   function startProcessor(stream) {
     if (processor) {
@@ -144,23 +144,34 @@
         const imageBitmap = await videoFrame.createImageBitmap();
         drawCanvasBitmap(imageBitmap);
         imageBitmap.close();
-        videoFrame.destroy();
+        if (videoFrame.close) {
+          videoFrame.close();
+        }
+        else {
+          videoFrame.destroy();
+        }
       },
-      stop() {
-        console.log('Writable stop');
-      }
+      // stop() {
+      //   console.log('Writable stop');
+      // },
+      close() {
+        console.log('Writable close');
+      },
+      abort(reason) {
+        console.log('Writable abort:', reason);
+      },
     })
 
     processor.readable
       .pipeTo(writable);
   }
 
-  function stopReader() {
-    if (videoTrackReader) {
-      videoTrackReader.stop();
-      videoTrackReader = null;
-    }
-  }
+  // function stopReader() {
+  //   if (videoTrackReader) {
+  //     videoTrackReader.stop();
+  //     videoTrackReader = null;
+  //   }
+  // }
 
   function stopProcessor() {
     if (writable) {
